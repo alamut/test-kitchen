@@ -125,15 +125,28 @@ module Kitchen
 
         # (see Base::Connection#upload)
         def upload(locals, remote)
-          Array(locals).each do |local|
-            opts = File.directory?(local) ? { :recursive => true } : {}
-
-            session.scp.upload!(local, remote, opts) do |_ch, name, sent, total|
-              logger.debug("Uploaded #{name} (#{total} bytes)") if sent == total
-            end
+          # pack
+          cwd = File.dirname(locals.first)
+          locals.map! { |l| File.basename(l)}
+          local = "/tmp/kitchen_upload_#{rand(100000..999999)}.tar.gz"
+          logger.debug("Packing up into #{local}")
+          system("tar -zcf #{local} -C #{cwd} #{locals.join(' ')} 2>&1")
+          # upload
+          opts = File.directory?(local) ? { :recursive => true } : {}
+          session.scp.upload!(local, remote, opts) do |_ch, name, sent, total|
+            logger.debug("Uploaded #{name} (#{total} bytes)") if sent == total
           end
+          # unpack
+          execute("tar zxf #{remote}/#{File.basename(local)} -C #{remote}")
+          # cleanup
+          File.delete(local)
+          execute("rm -f #{remote}/#{File.basename(local)}")
         rescue Net::SSH::Exception => ex
+          File.delete(local)
           raise SshFailed, "SCP upload failed (#{ex.message})"
+        rescue
+          File.delete(local)
+          raise "Something went wrong, probably with tar/untar"
         end
 
         # (see Base::Connection#wait_until_ready)
