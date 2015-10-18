@@ -131,6 +131,9 @@ module Kitchen
           local = "/tmp/kitchen_upload_#{rand(100000..999999)}.tar.gz"
           logger.debug("Packing up into #{local}")
           system("tar -zcf #{local} -C #{cwd} #{locals.join(' ')} 2>&1")
+          # pp size
+          local_size = (File.size?(local).to_f/1024/1024).round(2)
+          logger.info("Uploading: #{local} (#{local_size}M)")
           # upload
           opts = File.directory?(local) ? { :recursive => true } : {}
           session.scp.upload!(local, remote, opts) do |_ch, name, sent, total|
