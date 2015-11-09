@@ -58,12 +58,16 @@ module Kitchen
       # @return [Array<String>]
       # @api private
       def display_instance(instance)
+        hostname = instance.diagnose[:state_file][:hostname] || ''
+        server_id = instance.diagnose[:state_file][:server_id] || ''
         [
           color_pad(instance.name),
           color_pad(instance.driver.name),
           color_pad(instance.provisioner.name),
           color_pad(instance.verifier.name),
           color_pad(instance.transport.name),
+          color_pad(hostname),
+          color_pad(server_id),
           format_last_action(instance.last_action)
         ]
       end
@@ -93,7 +97,8 @@ module Kitchen
           [
             colorize("Instance", :green), colorize("Driver", :green),
             colorize("Provisioner", :green), colorize("Verifier", :green),
-            colorize("Transport", :green), colorize("Last Action", :green)
+            colorize("Transport", :green), colorize("Hostname", :green),
+            colorize("Server ID", :green), colorize("Last Action", :green)
           ]
         ]
         table += Array(result).map { |i| display_instance(i) }
